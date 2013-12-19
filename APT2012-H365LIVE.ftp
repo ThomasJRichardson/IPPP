@@ -1,0 +1,4 @@
+user admin-allied QjN2597$Te1 
+mdelete /FTP/TomR/IPPP/APT2012_postIPasp.zip
+put C:\20131211_TomR\APT2012db\APT2012_postIPasp.zip
+quit 
