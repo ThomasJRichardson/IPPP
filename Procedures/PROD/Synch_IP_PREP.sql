@@ -1,21 +1,32 @@
 USE [IPPP]
 GO
 
-/****** Object:  StoredProcedure [dbo].[Synch_IP_PREP]    Script Date: 12/19/2013 10:53:49 ******/
+/*
+Environments:	DEV use APTLIVE, .10/11 commented out
+		QA use APTLIVE, .11
+		PROD use APTLIVE, .10
+*/
+
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Synch_IP_PREP]') AND type in (N'P', N'PC'))
-DROP PROCEDURE [dbo].[Synch_IP_PREP]
+begin
+	DROP PROCEDURE [dbo].[Synch_IP_PREP]
+
+	IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Synch_IP_PREP]') AND type in (N'P', N'PC'))
+		PRINT '*** UNABLE to Drop Procedure: Synch_IP_PREP'
+	ELSE
+		PRINT 'DROPPED Procedure: Synch_IP_PREP'
+end
 GO
 
 USE [IPPP]
 GO
 
-/****** Object:  StoredProcedure [dbo].[Synch_IP_PREP]    Script Date: 12/19/2013 10:53:49 ******/
+/****** Object:  StoredProcedure [dbo].[Synch_IP_PREP]    Script Date: 11/19/2013 09:32:42 ******/
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
-
 
 CREATE PROCEDURE [dbo].[Synch_IP_PREP]
 AS
@@ -78,40 +89,40 @@ BEGIN TRY
 
 		P.PrevSurname as ServiceRecordVerified
 
-	from APTTEST.dbo.Person P
+	from APTLIVE.dbo.Person P
 
-	left outer join APTTEST.dbo.Communications Email on Email.ParentUID = P.PersonUID and Email.Catid = 802
-	left outer join APTTEST.dbo.Communications Mobile on Mobile.ParentUID = P.PersonUID and Mobile.Catid = 800
+	left outer join APTLIVE.dbo.Communications Email on Email.ParentUID = P.PersonUID and Email.Catid = 802
+	left outer join APTLIVE.dbo.Communications Mobile on Mobile.ParentUID = P.PersonUID and Mobile.Catid = 800
 
-	left outer join APTTEST.dbo.StringHistory MAR on MAR.ParentUID = P.PersonUID and MAR.CatID = 1200
+	left outer join APTLIVE.dbo.StringHistory MAR on MAR.ParentUID = P.PersonUID and MAR.CatID = 1200
 
-	inner join APTTEST.dbo.Employee EE on EE.PersonUID = P.PersonUID
-		and EE.DateFirstEmployed = (select min(DateFirstEmployed) from APTTEST.dbo.Employee where PersonUID = P.PersonUID)
+	inner join APTLIVE.dbo.Employee EE on EE.PersonUID = P.PersonUID
+		and EE.DateFirstEmployed = (select min(DateFirstEmployed) from APTLIVE.dbo.Employee where PersonUID = P.PersonUID)
 
-	left outer join APTTEST.dbo.Employee E2 on E2.PersonUID = P.PersonUID
+	left outer join APTLIVE.dbo.Employee E2 on E2.PersonUID = P.PersonUID
 		and E2.DateFirstEmployed <> EE.DateFirstEmployed
 
-	left outer join APTTEST.dbo.Address A on A.ParentUID = P.PersonUID and A.CatId = 1
+	left outer join APTLIVE.dbo.Address A on A.ParentUID = P.PersonUID and A.CatId = 1
 	
-	left outer join APTTEST.dbo.IntegerHistory EEX on EEX.ParentUID = EE.EmployeeUID and EEX.CatID = 4137 and EEX.Value = 4119
+	left outer join APTLIVE.dbo.IntegerHistory EEX on EEX.ParentUID = EE.EmployeeUID and EEX.CatID = 4137 and EEX.Value = 4119
 
-	left outer join APTTEST.dbo.IntegerHistory EEJC on EEJC.ParentUID = EE.EmployeeUID and EEJC.CatID = 1002
+	left outer join APTLIVE.dbo.IntegerHistory EEJC on EEJC.ParentUID = EE.EmployeeUID and EEJC.CatID = 1002
 
-	left outer join APTTEST.dbo.CurrencyHistory SAL1 on SAL1.ParentUID = EE.EmployeeUID and SAL1.CatID = 201
+	left outer join APTLIVE.dbo.CurrencyHistory SAL1 on SAL1.ParentUID = EE.EmployeeUID and SAL1.CatID = 201
 
-	left outer join APTTEST.dbo.JobClass JC1 on JC1.JobClassUID = EEJC.Value
+	left outer join APTLIVE.dbo.JobClass JC1 on JC1.JobClassUID = EEJC.Value
 
-	inner join APTTEST.dbo.SchemeMember SM1 on SM1.EmployeeUID = EE.EmployeeUID
+	inner join APTLIVE.dbo.SchemeMember SM1 on SM1.EmployeeUID = EE.EmployeeUID
 
-	left outer join APTTEST.dbo.IntegerHistory E2X on E2X.ParentUID = E2.EmployeeUID and E2X.CatID = 4137 and E2X.Value = 4119
+	left outer join APTLIVE.dbo.IntegerHistory E2X on E2X.ParentUID = E2.EmployeeUID and E2X.CatID = 4137 and E2X.Value = 4119
 
-	left outer join APTTEST.dbo.IntegerHistory E2JC on E2JC.ParentUID = E2.EmployeeUID and E2JC.CatID = 1002
+	left outer join APTLIVE.dbo.IntegerHistory E2JC on E2JC.ParentUID = E2.EmployeeUID and E2JC.CatID = 1002
 
-	left outer join APTTEST.dbo.CurrencyHistory SAL2 on SAL2.ParentUID = E2.EmployeeUID and SAL2.CatID = 201
+	left outer join APTLIVE.dbo.CurrencyHistory SAL2 on SAL2.ParentUID = E2.EmployeeUID and SAL2.CatID = 201
 
-	left outer join APTTEST.dbo.JobClass JC2 on JC2.JobClassUID = E2JC.Value
+	left outer join APTLIVE.dbo.JobClass JC2 on JC2.JobClassUID = E2JC.Value
 
-	left outer join APTTEST.dbo.SchemeMember SM2 on SM2.EmployeeUID = E2.EmployeeUID
+	left outer join APTLIVE.dbo.SchemeMember SM2 on SM2.EmployeeUID = E2.EmployeeUID
 
 	where P.Reference like 'IP-%';
 
@@ -120,7 +131,7 @@ BEGIN TRY
 		update W
 		set W.PErsonUID = P.PersonUID
 		from		IP_WEB W
-		inner join	APTTEST.dbo.Person P
+		inner join	APTLIVE.dbo.Person P
 			on		P.Reference = W.Username;
 
 		insert into IP_PF_ARC
@@ -505,7 +516,10 @@ BEGIN CATCH
 	if @@TRANCOUNT > 0
 		rollback transaction;
 END CATCH
-
 GO
 
-
+IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Synch_IP_PREP]') AND type in (N'P', N'PC'))
+	PRINT 'CREATED Procedure: Synch_IP_PREP'
+ELSE
+	PRINT '*** UNABLE to create Procedure: Synch_IP_PREP'
+GO

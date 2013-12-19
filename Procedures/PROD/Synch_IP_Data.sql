@@ -1,21 +1,32 @@
 USE [IPPP]
 GO
 
-/****** Object:  StoredProcedure [dbo].[Synch_IP_DATA]    Script Date: 12/19/2013 10:52:35 ******/
+/*
+Environments:	DEV use APTTEST, .10/11 commented out
+		QA use APTLIVE, .11
+		PROD use APTLIVE, .10
+*/
+
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Synch_IP_DATA]') AND type in (N'P', N'PC'))
-DROP PROCEDURE [dbo].[Synch_IP_DATA]
+begin
+	DROP PROCEDURE [dbo].[Synch_IP_DATA]
+
+	IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Synch_IP_DATA]') AND type in (N'P', N'PC'))
+		PRINT '*** UNABLE to Drop Procedure: Synch_IP_DATA'
+	ELSE
+		PRINT 'DROPPED Procedure: Synch_IP_DATA'
+end
 GO
 
 USE [IPPP]
 GO
 
-/****** Object:  StoredProcedure [dbo].[Synch_IP_DATA]    Script Date: 12/19/2013 10:52:35 ******/
+/****** Object:  StoredProcedure [dbo].[Synch_IP_DATA]    Script Date: 11/19/2013 09:32:42 ******/
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
-
 
 CREATE PROCEDURE [dbo].[Synch_IP_DATA]
 AS
@@ -37,7 +48,7 @@ BEGIN TRY
 					when U.blnCorrect = 0 then 'Rejected'
 					when U.blnCorrect = 1 then 'Verified'	end
 	from		IP_WEB_PERSON_DIFF U
-	inner join	APTTEST.dbo.Person P on P.PersonUID = U.PersonUID;
+	inner join	APTLIVE.dbo.Person P on P.PersonUID = U.PersonUID;
 
 		select convert(varchar,@@ROWCOUNT) + ' Profund Person updates by Synch_IP_DATA';
 
@@ -48,12 +59,12 @@ BEGIN TRY
 		A.Line4 = case when isnull(U.Address1,'') = '' then A.Line4 else U.Address4 end,
 		A.TelephoneNumber = case when isnull(U.PHoneHome,'') = '' then A.TelephoneNumber else U.PhoneHome end
 	from		IP_WEB_ADDRESS_DIFF U
-	inner join	APTTEST.dbo.Person P on P.PersonUID = U.PersonUID
-	inner join	APTTEST.dbo.Address A on A.ParentUID = P.PersonUID and A.CatID = 1; --and A.Enddate is null
+	inner join	APTLIVE.dbo.Person P on P.PersonUID = U.PersonUID
+	inner join	APTLIVE.dbo.Address A on A.ParentUID = P.PersonUID and A.CatID = 1; --and A.Enddate is null
 
 		select convert(varchar,@@ROWCOUNT) + ' Profund Address updates by Synch_IP_DATA';
 
-	insert into APTTEST.dbo.Address (
+	insert into APTLIVE.dbo.Address (
 		ParentUID,
 		CatID,
 		EffDate,
@@ -74,20 +85,20 @@ BEGIN TRY
 		U.PhoneHome,
 		getdate(), 1, 1, 1, 1
 	from		IP_WEB_ADDRESS_DIFF U
-	inner join	APTTEST.dbo.Person P on P.PersonUID = U.PersonUID
-	where	not exists (select 1 from APTTEST.dbo.Address A where A.ParentUID = P.PersonUID and A.CatID = 1 and A.Enddate is null);
+	inner join	APTLIVE.dbo.Person P on P.PersonUID = U.PersonUID
+	where	not exists (select 1 from APTLIVE.dbo.Address A where A.ParentUID = P.PersonUID and A.CatID = 1 and A.Enddate is null);
 
 		select convert(varchar,@@ROWCOUNT) + ' Profund Address inserts by Synch_IP_DATA';
 
 	update	C
 	set	C.Value = U.Email
 	from		IP_WEB_EMAIL_DIFF U
-	inner join	APTTEST.dbo.Person P on P.PersonUID = U.PersonUID
-	inner join	APTTEST.dbo.Communications C on C.ParentUID = P.PersonUID and C.CatID = 802;
+	inner join	APTLIVE.dbo.Person P on P.PersonUID = U.PersonUID
+	inner join	APTLIVE.dbo.Communications C on C.ParentUID = P.PersonUID and C.CatID = 802;
 
 		select convert(varchar,@@ROWCOUNT) + ' Profund Email updates by Synch_IP_DATA';
 
-	insert into APTTEST.dbo.Communications (
+	insert into APTLIVE.dbo.Communications (
 		ParentUID,
 		CatID,
 		EffDate,
@@ -100,20 +111,20 @@ BEGIN TRY
 		U.Email,
 		getdate(), 1, 1, 1, 1
 	from		IP_WEB_EMAIL_DIFF U
-	inner join	APTTEST.dbo.Person P on P.PersonUID = U.PersonUID
-	where	not exists (select 1 from APTTEST.dbo.Communications where ParentUID = P.PersonUID and CatID = 802);
+	inner join	APTLIVE.dbo.Person P on P.PersonUID = U.PersonUID
+	where	not exists (select 1 from APTLIVE.dbo.Communications where ParentUID = P.PersonUID and CatID = 802);
 
 		select convert(varchar,@@ROWCOUNT) + ' Profund Email inserts by Synch_IP_DATA';
 
 	update C
 	set	C.Value = U.PhoneMobile
 	from		IP_WEB_MOBILE_DIFF U
-	inner join	APTTEST.dbo.Person P on P.PersonUID = U.PersonUID
-	inner join	APTTEST.dbo.Communications C on C.ParentUID = P.PersonUID and C.CatID = 800;
+	inner join	APTLIVE.dbo.Person P on P.PersonUID = U.PersonUID
+	inner join	APTLIVE.dbo.Communications C on C.ParentUID = P.PersonUID and C.CatID = 800;
 
 		select convert(varchar,@@ROWCOUNT) + ' Profund Mobile updates by Synch_IP_DATA';
 
-	insert into APTTEST.dbo.Communications (
+	insert into APTLIVE.dbo.Communications (
 		ParentUID,
 		CatID,
 		EffDate,
@@ -126,8 +137,8 @@ BEGIN TRY
 		U.PhoneMobile,
 		getdate(), 1, 1, 1, 1
 	from		IP_WEB_MOBILE_DIFF U
-	inner join	APTTEST.dbo.Person P on P.PersonUID = U.PersonUID
-	where	not exists (select 1 from APTTEST.dbo.Communications where ParentUID = P.PersonUID and CatID = 800);
+	inner join	APTLIVE.dbo.Person P on P.PersonUID = U.PersonUID
+	where	not exists (select 1 from APTLIVE.dbo.Communications where ParentUID = P.PersonUID and CatID = 800);
 
 		select convert(varchar,@@ROWCOUNT) + ' Profund Mobile inserts by Synch_IP_DATA';
 
@@ -138,12 +149,12 @@ BEGIN TRY
 						when 'Single'		then 'SIN'
 		else 'UNK' end
 	from		IP_WEB_MARSTATUS_DIFF U
-	inner join	APTTEST.dbo.Person P on P.PersonUID = U.PersonUID
-	inner join	APTTEST.dbo.StringHistory M on M.ParentUID = P.PersonUID and M.CatID = 1200;
+	inner join	APTLIVE.dbo.Person P on P.PersonUID = U.PersonUID
+	inner join	APTLIVE.dbo.StringHistory M on M.ParentUID = P.PersonUID and M.CatID = 1200;
 
 		select convert(varchar,@@ROWCOUNT) + ' Profund Marital Status updates by Synch_IP_DATA';
 
-	insert into APTTEST.dbo.StringHistory (
+	insert into APTLIVE.dbo.StringHistory (
 		ParentUID,
 		CatID,
 		EffDate,
@@ -160,8 +171,8 @@ BEGIN TRY
 		else 'UNK' end,
 		getdate(), 1, 1, 1, 1
 	from		IP_WEB_MARSTATUS_DIFF U
-	inner join	APTTEST.dbo.Person P on P.PersonUID = U.PersonUID
-	where	not exists (select 1 from APTTEST.dbo.StringHistory where ParentUID = P.PersonUID and CatID = 1200);
+	inner join	APTLIVE.dbo.Person P on P.PersonUID = U.PersonUID
+	where	not exists (select 1 from APTLIVE.dbo.StringHistory where ParentUID = P.PersonUID and CatID = 1200);
 
 		select convert(varchar,@@ROWCOUNT) + ' Profund Marital Status inserts by Synch_IP_DATA';
 
@@ -363,7 +374,10 @@ BEGIN CATCH
 	if @@TRANCOUNT > 0
 		rollback transaction;
 END CATCH
-
 GO
 
-
+IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Synch_IP_DATA]') AND type in (N'P', N'PC'))
+	PRINT 'CREATED Procedure: Synch_IP_DATA'
+ELSE
+	PRINT '*** UNABLE to create Procedure: Synch_IP_DATA'
+GO
