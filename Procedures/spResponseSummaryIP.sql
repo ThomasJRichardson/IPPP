@@ -21,14 +21,20 @@ GO
 create procedure
 [dbo].[spResponseSummaryIP]
 AS
-select case blnCorrect
-when null then 'No Response'
-when 0 then 'Rejected'
-when 1 then 'Confirmed'
+select case 
+when blnCorrect is null then 'No Response'
+when blnCorrect = 0 then 'Rejected'
+when blnCorrect = 1 then 'Confirmed'
 end as Status,
 count(1) as member_count
 from IP_WEB_ARCHIVE
 group by blnCorrect
+order by
+case 
+when blnCorrect is null then 3
+when blnCorrect = 0 then 1
+when blnCorrect = 1 then 2
+end
 GO
 
 exec [spResponseSummaryIP]
