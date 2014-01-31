@@ -74,8 +74,9 @@ BEGIN TRY
 		EE.DateFirstEmployed as DateEmpStart_1,
 		EEX.EffDate as DateEmpCease_1,
 		SM1.DateJoinedScheme as DateJoinedScheme_1,
-		JC1.LongDesc as SchemeCategory_1,
-		SAL1.Value as PensionableSalary_1,
+		isnull(JC1.LongDesc,'?') as SchemeCategory_1,
+		case when P.Reference like 'IP-%' then BASSAL1.Value else PENSAL1.Value end
+			as PensionableSalary_1,
 		left(EE.PayrollNumber,1) as TransferIn_1,
 		SM1.SchemeRetirementDate as NormalRetDate_1,
 
@@ -83,16 +84,22 @@ BEGIN TRY
 		E2X.EffDate as DateEmpCease_2,
 		SM2.DateJoinedScheme as DateJoinedScheme_2,
 		JC2.LongDesc as SchemeCategory_2,
-		SAL2.Value as PensionableSalary_2,
+		case when P.Reference like 'IP-%' then BASSAL2.Value else PENSAL2.Value end
+			as PensionableSalary_2,
 		left(E2.PayrollNumber,1) as TransferIn_2,
 		SM2.SchemeRetirementDate as NormalRetDate_2,
 
-		P.PrevSurname as ServiceRecordVerified
+		P.PrevSurname as ServiceRecordVerified,
+
+		case when P.Reference like 'IP-%' then PENSAL1.Value else BASSAL1.Value end
+			as FinalSalary_1,
+		case when P.Reference like 'IP-%' then PENSAL2.Value else BASSAL2.Value end
+			as FinalSalary_2
 
 	from APTLIVE.dbo.Person P
 
-	left outer join APTLIVE.dbo.Communications Email on Email.ParentUID = P.PersonUID and Email.Catid = 802
-	left outer join APTLIVE.dbo.Communications Mobile on Mobile.ParentUID = P.PersonUID and Mobile.Catid = 800
+	left outer join APTLIVE.dbo.Communications Email on Email.ParentUID = P.PersonUID and Email.Catid = 802 and Email.EndDate is null
+	left outer join APTLIVE.dbo.Communications Mobile on Mobile.ParentUID = P.PersonUID and Mobile.Catid = 800 and Mobile.EndDate is null
 
 	left outer join APTLIVE.dbo.StringHistory MAR on MAR.ParentUID = P.PersonUID and MAR.CatID = 1200
 
@@ -102,13 +109,14 @@ BEGIN TRY
 	left outer join APTLIVE.dbo.Employee E2 on E2.PersonUID = P.PersonUID
 		and E2.DateFirstEmployed <> EE.DateFirstEmployed
 
-	left outer join APTLIVE.dbo.Address A on A.ParentUID = P.PersonUID and A.CatId = 1
+	left outer join APTLIVE.dbo.Address A on A.ParentUID = P.PersonUID and A.CatId = 1 and A.EndDate is null
 	
 	left outer join APTLIVE.dbo.IntegerHistory EEX on EEX.ParentUID = EE.EmployeeUID and EEX.CatID = 4137 and EEX.Value = 4119
 
 	left outer join APTLIVE.dbo.IntegerHistory EEJC on EEJC.ParentUID = EE.EmployeeUID and EEJC.CatID = 1002
 
-	left outer join APTLIVE.dbo.CurrencyHistory SAL1 on SAL1.ParentUID = EE.EmployeeUID and SAL1.CatID = 201
+	left outer join APTLIVE.dbo.CurrencyHistory BASSAL1 on BASSAL1.ParentUID = EE.EmployeeUID and BASSAL1.CatID = 201 --BASSAL
+	left outer join APTLIVE.dbo.CurrencyHistory PENSAL1 on PENSAL1.ParentUID = EE.EmployeeUID and PENSAL1.CatID = 203 --PENSAL
 
 	left outer join APTLIVE.dbo.JobClass JC1 on JC1.JobClassUID = EEJC.Value
 
@@ -118,161 +126,15 @@ BEGIN TRY
 
 	left outer join APTLIVE.dbo.IntegerHistory E2JC on E2JC.ParentUID = E2.EmployeeUID and E2JC.CatID = 1002
 
-	left outer join APTLIVE.dbo.CurrencyHistory SAL2 on SAL2.ParentUID = E2.EmployeeUID and SAL2.CatID = 201
+	left outer join APTLIVE.dbo.CurrencyHistory BASSAL2 on BASSAL2.ParentUID = E2.EmployeeUID and BASSAL2.CatID = 201 --BASSAL
+	left outer join APTLIVE.dbo.CurrencyHistory PENSAL2 on PENSAL2.ParentUID = E2.EmployeeUID and PENSAL2.CatID = 203 --PENSAL
 
 	left outer join APTLIVE.dbo.JobClass JC2 on JC2.JobClassUID = E2JC.Value
 
 	left outer join APTLIVE.dbo.SchemeMember SM2 on SM2.EmployeeUID = E2.EmployeeUID
 
-	where P.Reference like 'IP-%';
-
-	if (select count(1) from IP_PF_ARC) = 0
-	begin
-		update W
-		set W.PErsonUID = P.PersonUID
-		from		IP_WEB W
-		inner join	APTLIVE.dbo.Person P
-			on		P.Reference = W.Username;
-
-		insert into IP_PF_ARC
-		select * from IP_PF_LOCAL;
-
-		delete from IP_WEB_ARCHIVE;
-
-		insert into IP_WEB_ARCHIVE
-		select * from IP_WEB;
-	end
-
-	if (select count(1) from IP_WEB) = 0
-	begin
-		insert into [dbo].[IP_WEB] (
-		[Username],
-		[PersonUID],
-
-		[PPSN],
-		[Surname],
-		[Forename],
-
-		[Address1],
-		[Address2],
-		[Address3],
-		[Address4],
-
-		[PhoneHome],
-		[PhoneMobile],
-		[Email],
-
-		[DateOfBirth],
-		[Gender],
-		[MaritalStatus],
-
-		[ProfileLastUpdateBy],
-		[ProfileLastUpdateAt],
-
-		[DateEmpStart_1],
-		[DateEmpCease_1],
-		[DateJoinedScheme_1],
-		[SchemeCategory_1],
-		[PensionableSalary_1],
-		[TransferIn_1],
-		[NormalRetDate_1],
-
-		[DateEmpStart_2],
-		[DateEmpCease_2],
-		[DateJoinedScheme_2],
-		[SchemeCategory_2],
-		[PensionableSalary_2],
-		[TransferIn_2],
-		[NormalRetDate_2],
-
-		[ServiceLastUpdateAt],
-
-		[DateEmpStart_m1],
-		[DateEmpCease_m1],
-		[DateJoinedScheme_m1],
-		[SchemeCategory_m1],
-		[PensionableSalary_m1],
-		[TransferIn_m1],
-		[NormalRetDate_m1],
-
-		[DateEmpStart_m2],
-		[DateEmpCease_m2],
-		[DateJoinedScheme_m2],
-		[SchemeCategory_m2],
-		[PensionableSalary_m2],
-		[TransferIn_m2],
-		[NormalRetDate_m2],
-
-		[blnCorrect],
-		[MemberServiceUpdateAt]
-		)
-		select
-		[Username],
-		[PersonUID],
-
-		[PPSN],
-		[Surname],
-		[Forename],
-
-		[Address1],
-		[Address2],
-		[Address3],
-		[Address4],
-
-		[PhoneHome],
-		[PhoneMobile],
-		[Email],
-
-		[DateOfBirth],
-		[Gender],
-		[MaritalStatus],
-
-		'APT',
-		getdate(),
-
-		[DateEmpStart_1],
-		[DateEmpCease_1],
-		[DateJoinedScheme_1],
-		[SchemeCategory_1],
-		[PensionableSalary_1],
-		[TransferIn_1],
-		[NormalRetDate_1],
-
-		[DateEmpStart_2],
-		[DateEmpCease_2],
-		[DateJoinedScheme_2],
-		[SchemeCategory_2],
-		[PensionableSalary_2],
-		[TransferIn_2],
-		[NormalRetDate_2],
-
-		getdate(),
-
-		[DateEmpStart_1],
-		[DateEmpCease_1],
-		[DateJoinedScheme_1],
-		[SchemeCategory_1],
-		[PensionableSalary_1],
-		[TransferIn_1],
-		[NormalRetDate_1],
-
-		[DateEmpStart_2],
-		[DateEmpCease_2],
-		[DateJoinedScheme_2],
-		[SchemeCategory_2],
-		[PensionableSalary_2],
-		[TransferIn_2],
-		[NormalRetDate_2],
-
-		null,
-		null
-		from	IP_PF_LOCAL;
-
-		delete from IP_WEB_ARCHIVE;
-
-		insert into IP_WEB_ARCHIVE
-		select * from IP_WEB;
-	end
+	where P.Reference like 'IP-%'
+	or P.Reference like 'RY-%';
 
 	insert into IP_PF_PROFILE_DIFF
 	select 
@@ -338,7 +200,10 @@ BEGIN TRY
 		[SchemeCategory_2],
 		[PensionableSalary_2],
 		[TransferIn_2],
-		[NormalRetDate_2]
+		[NormalRetDate_2],
+	
+		[FinalSalary_1],
+		[FinalSalary_2]
 	from IP_PF_LOCAL
 	EXCEPT
 	select
@@ -359,7 +224,10 @@ BEGIN TRY
 		[SchemeCategory_2],
 		[PensionableSalary_2],
 		[TransferIn_2],
-		[NormalRetDate_2]
+		[NormalRetDate_2],
+
+		[FinalSalary_1],
+		[FinalSalary_2]
 	from IP_PF_ARC;
 
 	insert into dbo.IP_WEB_LOCAL
@@ -478,7 +346,10 @@ BEGIN TRY
 		[SchemeCategory_m2],
 		[PensionableSalary_m2],
 		[TransferIn_m2],
-		[NormalRetDate_m2]
+		[NormalRetDate_m2],
+		
+		[FinalSalary_m1],
+		[FinalSalary_m2]
 	from IP_WEB_LOCAL
 	EXCEPT
 	select
@@ -499,7 +370,10 @@ BEGIN TRY
 		[SchemeCategory_m2],
 		[PensionableSalary_m2],
 		[TransferIn_m2],
-		[NormalRetDate_m2]
+		[NormalRetDate_m2],
+		
+		[FinalSalary_m1],
+		[FinalSalary_m2]
 	from IP_WEB_ARCHIVE;
 
 END TRY
@@ -516,10 +390,12 @@ BEGIN CATCH
 	if @@TRANCOUNT > 0
 		rollback transaction;
 END CATCH
+
+
+
+
+
+
 GO
 
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Synch_IP_PREP]') AND type in (N'P', N'PC'))
-	PRINT 'CREATED Procedure: Synch_IP_PREP'
-ELSE
-	PRINT '*** UNABLE to create Procedure: Synch_IP_PREP'
-GO
+

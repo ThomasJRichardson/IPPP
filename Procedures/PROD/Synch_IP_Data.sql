@@ -343,6 +343,7 @@ BEGIN TRY
 		W.[DateJoinedScheme_1] = U.[DateJoinedScheme_1],
 		W.[SchemeCategory_1] = U.[SchemeCategory_1],
 		W.[PensionableSalary_1] = U.[PensionableSalary_1],
+		W.[FinalSalary_1] = U.[FinalSalary_1],
 		W.[TransferIn_1] = U.[TransferIn_1],
 		W.[NormalRetDate_1] = U.[NormalRetDate_1],
 
@@ -351,6 +352,7 @@ BEGIN TRY
 		W.[DateJoinedScheme_2] = U.[DateJoinedScheme_2],
 		W.[SchemeCategory_2] = U.[SchemeCategory_2],
 		W.[PensionableSalary_2] = U.[PensionableSalary_2],
+		W.[FinalSalary_2] = U.[FinalSalary_2],
 		W.[TransferIn_2] = U.[TransferIn_2],
 		W.[NormalRetDate_2] = U.[NormalRetDate_2],
 
@@ -374,10 +376,8 @@ BEGIN CATCH
 	if @@TRANCOUNT > 0
 		rollback transaction;
 END CATCH
+
+
 GO
 
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Synch_IP_DATA]') AND type in (N'P', N'PC'))
-	PRINT 'CREATED Procedure: Synch_IP_DATA'
-ELSE
-	PRINT '*** UNABLE to create Procedure: Synch_IP_DATA'
-GO
+
